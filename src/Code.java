@@ -1,14 +1,15 @@
 import java.util.ArrayList;
+import java.util.TreeSet;
 
 // flags 가 67이면 global 에 만들어진 함수, 87? 이면 def안에 def, default 로 67로 지정하는게 좋을듯.
 /**
  * argCount : parameter 수
  * nLocals : 함수내의 지역변수와 parameter 의 수를 합친 것
- * stackSize : if 나 while 이 있냐 없냐의 차이, 있을 경우 2 없을 경우 1
+ * stackSize : 한번에 얼마나 스택에 넣는지 최대 크기. array 10개를 다 한번에 넣으면 stack size 10
  * flags : 이 코드가 무엇인지를 알려주는 듯.
  * code : hex 값으로 저장된 실행할 코드 hex 를 String 으로 저장.
  * myConst : 내부의 상수 값의 List
- * names : global 변수, 함수 이름
+ * names : 함수 내에서 사용한 global 변수, 함수 이름
  * varNames : 지역변수 이름
  * fileName : 파일 이름
  * name : 함수 이름, global 의 경우 '<module>'으로 저장.
@@ -20,7 +21,7 @@ public class Code {
 //    private int nLocals;  // varNames.size()로 대체 가능.
     private int stackSize; // global 은 1, 함수는 2로 무조건 가능 (def 안의 def가 없어서)
     private int flags;
-    private String code;
+    private StringBuilder code;
     private ArrayList<Object> myConst;
     private ArrayList<String> names;
     private ArrayList<String> varNames;
@@ -30,6 +31,7 @@ public class Code {
     private int lNoTab;
 
     public Code() {
+        code = new StringBuilder();
         myConst = new ArrayList<>();
         names = new ArrayList<>();
         varNames = new ArrayList<>();
@@ -79,36 +81,61 @@ public class Code {
         this.flags = flags;
     }
 
-    public String getCode() {
+    public StringBuilder getCode() {
         return code;
     }
 
-    public void setCode(String code) {
-        this.code = code;
+    public void appendCode(String code) {
+        this.code.append(code);
     }
 
     public ArrayList<Object> getMyConst() {
         return myConst;
     }
 
-    public void addConst(Object myConst) {
-        this.myConst.add(myConst);
+    public boolean addConst(Object myConst) {
+        if (this.myConst.contains(myConst)) {
+            return false;
+        }
+        return this.myConst.add(myConst);
+    }
+
+    public String indexOfConst(Object myConst) {
+        addConst(myConst);
+
+        return String.format("%02x", this.myConst.indexOf(myConst));
     }
 
     public ArrayList<String> getNames() {
         return names;
     }
 
-    public void addNames(String name) {
-        this.names.add(name);
+    public boolean addNames(String name) {
+        if (this.names.contains(name)) {
+            return false;
+        }
+        return this.names.add(name);
+    }
+
+    public String indexOfNames(String name) {
+        addNames(name);
+        return String.format("%02x", this.names.indexOf(name));
     }
 
     public ArrayList<String> getVarNames() {
         return varNames;
     }
 
-    public void addVarNames(String varNames) {
-        this.varNames.add(varNames);
+    public boolean addVarNames(String varNames) {
+        if (this.varNames.contains(varNames)) {
+            return false;
+        }
+        return this.varNames.add(varNames);
+    }
+
+    public String indexOfVarNames(String varNames) {
+        addVarNames(varNames);
+        return String.format("%02x", this.varNames.indexOf(varNames));
     }
 
     public String getFileName() {
