@@ -88,6 +88,14 @@ def savepyc(code, path):
             pass
         raise
 
+def disassemCompiledFile(fileName):
+    f = open(fileName, "rb")
+    magic = f.read(4)
+    moddate = f.read(4)
+    print "magic %s" % (magic.encode('hex'))
+    print "moddate %s" % (moddate.encode('hex'))
+    code = marshal.load(f)
+    showCode(code)
 
 def showCode(code, indent=''):
     print "%scode" % indent
@@ -96,7 +104,7 @@ def showCode(code, indent=''):
     print "%snlocals   \t:%d" % (indent, code.co_nlocals)
     print "%sstacksize \t:%d" % (indent, code.co_stacksize)
     print "%sflags     \t:%04x" % (indent, code.co_flags)
-    show_hex("code", code.co_code, indent=indent)
+    showHex("code", code.co_code, indent=indent)
     dis.disassemble(code)
     print "%sconsts" % indent
     for const in code.co_consts:
@@ -111,10 +119,10 @@ def showCode(code, indent=''):
     print "%sfilename %r" % (indent, code.co_filename)
     print "%sname %r" % (indent, code.co_name)
     print "%sfirstlineno %d" % (indent, code.co_firstlineno)
-    show_hex("lnotab", code.co_lnotab, indent=indent)
+    showHex("lnotab", code.co_lnotab, indent=indent)
 
 
-def show_hex(label, h, indent):
+def showHex(label, h, indent):
     h = h.encode('hex')
     if len(h) < 60:
         print "%s%s %s" % (indent, label, h)
@@ -127,7 +135,7 @@ def show_hex(label, h, indent):
 def main(argv, path):
     code = convertjsontocode(argv)
     savepyc(code, path)
-    showCode(code)
+    disassemCompiledFile(path)
 
 
 if __name__ == "__main__":
