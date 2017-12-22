@@ -330,7 +330,6 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
                 currentCode.appendCode(OpCode.LOAD_FAST.getHexCode());
                 currentCode.appendCode(currentCode.indexOfVarNames(variableName));
             } else if (pycCode.isContainNames(variableName)) {
-
                 currentCode.addNames(variableName);
                 currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
                 currentCode.appendCode(pycCode.indexOfVarNames(variableName));
@@ -434,6 +433,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
             --assignDepth;
             currentCode.appendCode(OpCode.PRINT_ITEM.getHexCode());
             currentCode.appendCode(OpCode.PRINT_NEWLINE.getHexCode());
+            return ;
         } else if (functionName.equals("read")) {
 
         }
@@ -468,7 +468,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
         } else if (pycCode.isContainNames(variableName)) {
             currentCode.addNames(variableName);
             currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
-            currentCode.appendCode(pycCode.indexOfVarNames(variableName));
+            currentCode.appendCode(pycCode.indexOfNames(variableName));
         } else if ('0' <= variableName.charAt(0)  && variableName.charAt(0) <= '9') {
             currentCode.addConst(variableName);
             currentCode.appendCode(OpCode.LOAD_CONST.getHexCode());
