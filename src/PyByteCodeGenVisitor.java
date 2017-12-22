@@ -46,10 +46,10 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
         pycCode.appendCode(pycCode.indexOfConst("None"));
         pycCode.appendCode(OpCode.STOP_CODE.getHexCode());
         pycCode.appendCode(OpCode.RETURN_VALUE.getHexCode());
-
+        System.out.println(pycCode.getCode().toString());
         new ByteCodeToPycGenerator().compile(pycCode);
 
-        System.out.println(pycCode.getCode().toString());
+
     }
 
     @Override
@@ -225,7 +225,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
     @Override
     public void visitLocal_decl_array(Local_Variable_Declaration_Array node) {
         String variableName = node.lhs.getText();
-        if (!currentCode.addNames(variableName)) {
+        if (!currentCode.addVarNames(variableName)) {
             System.out.println("This value is already exist! : visitLocal_decl");
             return ;
         }
@@ -330,7 +330,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
                 currentCode.appendCode(OpCode.LOAD_FAST.getHexCode());
                 currentCode.appendCode(currentCode.indexOfVarNames(variableName));
             } else if (pycCode.isContainNames(variableName)) {
-                // FIXME 이렇게 되면 전부 GLOBAL이 되버림.
+
                 currentCode.addNames(variableName);
                 currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
                 currentCode.appendCode(pycCode.indexOfVarNames(variableName));
