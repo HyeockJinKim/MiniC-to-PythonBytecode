@@ -1,134 +1,116 @@
-# coding=utf-8
-import sys, dis, imp, marshal, json, new, time, types
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+// V5eXJleWR0Q0RycVkzc3NxM3NuYlFoSVNFaA==N0tHdzZyV1FJT3VwamV5eXJleWR0T3Vwam
+public class ByteCodeToPycGenerator {
+    public void compile(Code code) {
+        JsonObject jsonCode = convertJsonObject(code);
+        sendToPythonCode(jsonCode);
+    }
 
-def convertjsontocode(obj):
-    if type(obj) is str:
-        jsonObj = json.loads(obj)
-    else:
-        jsonObj = obj
+    private JsonObject convertJsonObject(Code code) {
+        JsonObjectBuilder jsonObjectBuilder = Json.createObjectBuilder();
+        JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
 
-    myConst = []
-    for cons in jsonObj["myConst"]:
-        if type(cons) is dict:
-            myConst.append(convertjsontocode(cons))
-        else:
-            myConst.append(switchConst(cons))
-    myConst = tuple(myConst)
+        jsonObjectBuilder.add("argCount", code.getArgCount());
+        jsonObjectBuilder.add("nLocals", code.getNLocals());
+        jsonObjectBuilder.add("stackSize", code.getStackSize());
+        jsonObjectBuilder.add("flags", code.getFlags());
+        jsonObjectBuilder.add("code", code.getCode().toString());
 
-    names = []
-    for name in jsonObj["names"]:
-        names.append(str(name))
-    names = tuple(names)
+        ArrayList constArray = code.getMyConst();
+        for (Object cons : constArray) {
+            if (cons instanceof Code)
+                jsonArrayBuilder.add(convertJsonObject((Code) cons));
+            else if (cons instanceof String)
+                jsonArrayBuilder.add((String) cons);
+            else
+                jsonArrayBuilder.add((int) cons);
+        }
+        jsonObjectBuilder.add("myConst", jsonArrayBuilder.build());
 
-    varNames = []
-    for varname in jsonObj["varNames"]:
-        varNames.append(str(varname))
-    varNames = tuple(varNames)
+        jsonArrayBuilder = Json.createArrayBuilder();
+        ArrayList nameArray = code.getNames();
+        for (Object name : nameArray)
+            jsonArrayBuilder.add((String) name);
+        jsonObjectBuilder.add("names", jsonArrayBuilder.build());
 
-    code = new.code(jsonObj["argCount"],
-                    jsonObj["nLocals"],
-                    jsonObj["stackSize"],
-                    int(str(jsonObj["flags"]), 16),
-                    jsonObj["code"].decode('hex'),
-                    myConst,
-                    names,
-                    varNames,
-                    str(jsonObj["fileName"]),
-                    str(jsonObj["name"]),
-                    jsonObj["firstLineNumber"],
-                    ""
-                    )
+        jsonArrayBuilder = Json.createArrayBuilder();
+        ArrayList varNameArray = code.getVarNames();
+        for (Object name : varNameArray)
+            jsonArrayBuilder.add((String) name);
+        jsonObjectBuilder.add("varNames", jsonArrayBuilder.build());
 
-    return code
+        jsonObjectBuilder.add("fileName", code.getFileName());
+        jsonObjectBuilder.add("name", code.getName());
+        jsonObjectBuilder.add("firstLineNumber", code.getFirstLineNumber());
+        jsonObjectBuilder.add("lNoTab", code.getlNoTab());
+        return jsonObjectBuilder.build();
+    }
 
+    private void sendToPythonCode(JsonObject object) {
+        String path = "./src/PycGenerator.py";
+        String param = object.toString();
+//        System.out.println(test);
+        String result = "";
+        Process ps = null;
+        BufferedReader br;
+        List<String> process_args = new ArrayList<>(Arrays.asList("python", path, param));
 
-def switchConst(const):
-    strConst = str(const)
-    if strConst == 'true':
-        return True
+        try {
+            ps = Runtime.getRuntime().exec(process_args.toArray(new String[]{}));
+            br = new BufferedReader(new InputStreamReader(ps.getInputStream()));
+            if (!ps.waitFor(3, TimeUnit.MINUTES)) {
+                ps.destroyForcibly();
+            }
+            String tmpStr;
+            while ((tmpStr = br.readLine()) != null) {
+                result = result + tmpStr + "\n";
+            }
+            System.out.println(result);
+            br.close();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        } finally {
 
-    if strConst == 'false':
-        return False
+            if (ps != null) {
+                ps.destroy();
+            }
 
-    if strConst == 'None':
-        return None
+        }
+    }
+}
 
-    try:
-        return int(strConst)
-    except ValueError:
-        return strConst
-
-
-def isnumber(s):
-    try:
-        int(s)
-        return True
-    except ValueError:
-        return False
-
-
-def savepyc(code, path):
-    stamp = long(time.time())
-    magicnum = imp.get_magic()  # python 버전별 매직 넘버
-    dumpCode = marshal.dumps(code)
-    try:
-        with open(path, 'wb') as f:
-            f.write(magicnum)
-            f.write(chr(stamp & 0xff))
-            f.write(chr((stamp >> 8) & 0xff))
-            f.write(chr((stamp >> 16) & 0xff))
-            f.write(chr((stamp >> 24) & 0xff))
-            f.write(dumpCode)
-            f.flush()
-    except OSError:
-        try:
-            print "Error!"
-        except OSError:
-            pass
-        raise
-
-
-def showCode(code, indent=''):
-    print "%scode" % indent
-    indent += '   '
-    print "%sargcount \t:%d" % (indent, code.co_argcount)
-    print "%snlocals   \t:%d" % (indent, code.co_nlocals)
-    print "%sstacksize \t:%d" % (indent, code.co_stacksize)
-    print "%sflags     \t:%04x" % (indent, code.co_flags)
-    show_hex("code", code.co_code, indent=indent)
-    dis.disassemble(code)
-    print "%sconsts" % indent
-    for const in code.co_consts:
-        if type(const) == types.CodeType:
-            showCode(const, indent + '   ')
-        else:
-            print "   %s%r" % (indent, const)
-    print "%snames %r" % (indent, code.co_names)
-    print "%svarnames %r" % (indent, code.co_varnames)
-    print "%sfreevars %r" % (indent, code.co_freevars)
-    print "%scellvars %r" % (indent, code.co_cellvars)
-    print "%sfilename %r" % (indent, code.co_filename)
-    print "%sname %r" % (indent, code.co_name)
-    print "%sfirstlineno %d" % (indent, code.co_firstlineno)
-    show_hex("lnotab", code.co_lnotab, indent=indent)
-
-
-def show_hex(label, h, indent):
-    h = h.encode('hex')
-    if len(h) < 60:
-        print "%s%s %s" % (indent, label, h)
-    else:
-        print "%s%s" % (indent, label)
-        for i in range(0, len(h), 60):
-            print "%s   %s" % (indent, h[i:i + 60])
-
-
-def main(argv, path):
-    code = convertjsontocode(argv)
-    savepyc(code, path)
-    showCode(code)
-
-
-if __name__ == "__main__":
-    main(sys.argv[1],"./test.pyc")
+//code = new Code();
+//code.setArgCount(0);
+//code.setStackSize(2);
+//code.setFlags(40);
+//code.appendCode("6400008400005a00006501006401006b0200722200650000640200830100016e000064030053");
+//Code inner = new Code();
+//inner.setArgCount(1);
+//inner.setStackSize(1);
+//inner.setFlags(43);
+//inner.appendCode("7c0000474864000053");
+//inner.addConst("None");
+//inner.addVarNames("a");
+//inner.setFileName("hello.py");
+//inner.setName("main");
+//inner.setFirstLineNumber(1);
+//inner.setlNoTab(1);
+//code.addConst(inner);
+//code.addConst("__main__");
+//code.addConst("Hello World");
+//code.addConst("None");
+//code.addNames("main");
+//code.addNames("__name__");
+//code.setFileName("hello.py");
+//code.setName("<Module>");
+//code.setFirstLineNumber(1);
