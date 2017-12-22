@@ -26,12 +26,11 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
         pycCode = new Code(64);
         currentCode = new Code(67);
 
-        pycCode.setFirstLineNumber(lineNumber);
+        pycCode.setFirstLineNumber(lineNumber++);
         assignDepth = 0;
         for (Declaration declaration : node.decls) {
             declaration.accept(this);
         }
-        // TODO : 파이썬으로의 전달 부분
 
         pycCode.appendCode(OpCode.LOAD_NAME.getHexCode());
         pycCode.appendCode(pycCode.indexOfNames("main"));
@@ -47,6 +46,8 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
         pycCode.appendCode(pycCode.indexOfConst("None"));
         pycCode.appendCode(OpCode.STOP_CODE.getHexCode());
         pycCode.appendCode(OpCode.RETURN_VALUE.getHexCode());
+
+        new ByteCodeToPycGenerator().compile(pycCode);
 
         System.out.println(pycCode.getCode().toString());
     }
@@ -131,7 +132,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
 
         node.params.accept(this);
         node.compount_stmt.accept(this);
-
+        currentCode.setFirstLineNumber(lineNumber++);
         pycCode.addConst(currentCode);
 
         pycCode.appendCode(OpCode.LOAD_CONST.getHexCode());
@@ -305,10 +306,11 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
             currentCode.appendCode(OpCode.DUP_TOP.getHexCode());
         }
         String variableName = node.t_node.toString();
-        if (currentCode.isContainVarNames(variableName)) {
+        if (currentCode.isContainVarNames(variableName) && !pycCode.isContainNames(variableName)) {
             currentCode.appendCode(OpCode.LOAD_FAST.getHexCode());
             currentCode.appendCode(currentCode.indexOfVarNames(variableName));
         } else if (pycCode.isContainNames(variableName)) {
+            currentCode.addNames(variableName);
             currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
             currentCode.appendCode(pycCode.indexOfVarNames(variableName));
         } else {
@@ -324,10 +326,12 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
     public void visitAref(ArefNode node) {
         if (assignDepth > 0) {
             String variableName = node.t_node.toString();
-            if (currentCode.isContainVarNames(variableName)) {
+            if (currentCode.isContainVarNames(variableName) && !pycCode.isContainNames(variableName)) {
                 currentCode.appendCode(OpCode.LOAD_FAST.getHexCode());
                 currentCode.appendCode(currentCode.indexOfVarNames(variableName));
             } else if (pycCode.isContainNames(variableName)) {
+                // FIXME 이렇게 되면 전부 GLOBAL이 되버림.
+                currentCode.addNames(variableName);
                 currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
                 currentCode.appendCode(pycCode.indexOfVarNames(variableName));
             } else {
@@ -436,7 +440,9 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
             currentCode.appendCode(OpCode.CALL_FUNCTION.getHexCode());
             currentCode.appendCode(pycCode.indexOfNames(node.t_node.toString()));
             currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
-            currentCode.appendCode(OpCode.POP_TOP.getHexCode());
+            if (assignDepth == 0) {
+                currentCode.appendCode(OpCode.POP_TOP.getHexCode());
+            }
         }
     }
 
