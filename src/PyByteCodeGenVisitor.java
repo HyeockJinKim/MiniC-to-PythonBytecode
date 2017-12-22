@@ -306,7 +306,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
             currentCode.appendCode(OpCode.DUP_TOP.getHexCode());
         }
         String variableName = node.t_node.toString();
-        if (currentCode.isContainVarNames(variableName) && !pycCode.isContainNames(variableName)) {
+        if (currentCode.isContainVarNames(variableName)) {
             currentCode.appendCode(OpCode.LOAD_FAST.getHexCode());
             currentCode.appendCode(currentCode.indexOfVarNames(variableName));
         } else if (pycCode.isContainNames(variableName)) {
@@ -326,7 +326,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
     public void visitAref(ArefNode node) {
         if (assignDepth > 0) {
             String variableName = node.t_node.toString();
-            if (currentCode.isContainVarNames(variableName) && !pycCode.isContainNames(variableName)) {
+            if (currentCode.isContainVarNames(variableName)) {
                 currentCode.appendCode(OpCode.LOAD_FAST.getHexCode());
                 currentCode.appendCode(currentCode.indexOfVarNames(variableName));
             } else if (pycCode.isContainNames(variableName)) {
@@ -462,6 +462,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
             currentCode.appendCode(OpCode.LOAD_FAST.getHexCode());
             currentCode.appendCode(currentCode.indexOfVarNames(variableName));
         } else if (pycCode.isContainNames(variableName)) {
+            currentCode.addNames(variableName);
             currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
             currentCode.appendCode(pycCode.indexOfVarNames(variableName));
         } else if ('0' <= variableName.charAt(0)  && variableName.charAt(0) <= '9') {
