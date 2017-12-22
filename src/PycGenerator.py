@@ -29,7 +29,7 @@ def convertjsontocode(obj):
     code = new.code(jsonObj["argCount"],
                     jsonObj["nLocals"],
                     jsonObj["stackSize"],
-                    int(str(jsonObj["flags"]), 16),
+                    jsonObj["flags"],
                     jsonObj["code"].decode('hex'),
                     myConst,
                     names,
