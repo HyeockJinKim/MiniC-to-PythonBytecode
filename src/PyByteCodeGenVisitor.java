@@ -427,10 +427,14 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
 
     @Override
     public void visitFun_call(FuncallNode node) {
+        String functionName = node.t_node.toString();
+        currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
+        currentCode.appendCode(pycCode.indexOfNames(functionName));
+        currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
         ++assignDepth;
         node.args.accept(this);
         --assignDepth;
-        String functionName = node.t_node.toString();
+
         if (functionName.equals("write")) {
             currentCode.appendCode(OpCode.PRINT_ITEM.getHexCode());
             currentCode.appendCode(OpCode.PRINT_NEWLINE.getHexCode());
