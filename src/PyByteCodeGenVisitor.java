@@ -154,7 +154,8 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
             currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
             currentCode.appendCode(OpCode.RETURN_VALUE.getHexCode());
         }
-        System.out.println(currentCode.getCode().toString());
+        for (String a : currentCode.getNames())
+            System.out.println(a);
         currentCode = new Code(67);
 
     }
@@ -269,7 +270,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
         currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
 
         currentCode.appendCode(OpCode.STORE_FAST.getHexCode());
-        currentCode.appendCode(currentCode.indexOfNames(variableName));
+        currentCode.appendCode(currentCode.indexOfVarNames(variableName));
         currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
     }
 
@@ -437,6 +438,8 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
         } else if (functionName.equals("read")) {
 
         }
+        System.out.println(functionName);
+        currentCode.addNames(functionName);
         currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
         currentCode.appendCode(pycCode.indexOfNames(functionName));
         currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
@@ -446,7 +449,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
 
 
         currentCode.appendCode(OpCode.CALL_FUNCTION.getHexCode());
-        currentCode.appendCode(pycCode.indexOfNames(node.t_node.toString()));
+        currentCode.appendCode(pycCode.indexOfNames(functionName));
         currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
         if (assignDepth == 0) {
             currentCode.appendCode(OpCode.POP_TOP.getHexCode());
@@ -528,7 +531,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
             expression.accept(this);
         }
     }
-
+    // FIXME : GLOBAL 변수 문제
     private void storeValue(String exprName) {
         if (currentCode.isContainVarNames(exprName)) {
             currentCode.appendCode(OpCode.STORE_FAST.getHexCode());
