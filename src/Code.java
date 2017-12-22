@@ -28,14 +28,23 @@ public class Code {
     private String fileName;
     private String name;
     private int firstLineNumber;
-    private int lNoTab;
+    private String lNoTab;
 
-    public Code() {
+    public Code(int flags) {
+        argCount = 0;
+        stackSize = 10;
+        this.flags = flags;
         code = new StringBuilder();
         myConst = new ArrayList<>();
         names = new ArrayList<>();
         varNames = new ArrayList<>();
+        fileName = "test.py";
+        if (flags == 64) {
+            name = "<module>";
+        }
+        lNoTab = "";
     }
+
 
     public boolean isContainConst(Object thisConst) {
         return myConst.contains(thisConst);
@@ -53,17 +62,13 @@ public class Code {
         return argCount;
     }
 
-    public void setArgCount(int argCount) {
-        this.argCount = argCount;
+    public void incArgCount() {
+        ++this.argCount;
     }
 
     public int getNLocals() {
         return varNames.size();
     }
-
-//    public void setNLocals(int nLocals) {
-//        this.nLocals = nLocals;
-//    }
 
     public int getStackSize() {
         return stackSize;
@@ -162,11 +167,7 @@ public class Code {
         this.firstLineNumber = firstLineNumber;
     }
 
-    public int getlNoTab() {
+    public String getlNoTab() {
         return lNoTab;
-    }
-
-    public void setlNoTab(int lNoTab) {
-        this.lNoTab = lNoTab;
     }
 }
