@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-// V5eXJleWR0Q0RycVkzc3NxM3NuYlFoSVNFaA==N0tHdzZyV1FJT3VwamV5eXJleWR0T3Vwam
 public class ByteCodeToPycGenerator {
     public void compile(Code code) {
         JsonObject jsonCode = convertJsonObject(code);
@@ -59,7 +58,6 @@ public class ByteCodeToPycGenerator {
     private void sendToPythonCode(JsonObject object) {
         String path = "./src/PycGenerator.py";
         String param = object.toString();
-//        System.out.println(test);
         String result = "";
         Process ps = null;
         BufferedReader br;
@@ -88,6 +86,8 @@ public class ByteCodeToPycGenerator {
         }
     }
 }
+
+// V5eXJleWR0Q0RycVkzc3NxM3NuYlFoSVNFaA==N0tHdzZyV1FJT3VwamV5eXJleWR0T3Vwam
 
 //code = new Code();
 //code.setArgCount(0);
