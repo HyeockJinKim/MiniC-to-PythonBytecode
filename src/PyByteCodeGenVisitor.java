@@ -251,7 +251,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
         currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
 
         currentCode.appendCode(OpCode.STORE_FAST.getHexCode());
-        currentCode.appendCode(currentCode.indexOfNames(variableName));
+        currentCode.appendCode(currentCode.indexOfVarNames(variableName));
         currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
     }
 
@@ -313,7 +313,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
         } else if (pycCode.isContainNames(variableName)) {
             currentCode.addNames(variableName);
             currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
-            currentCode.appendCode(pycCode.indexOfVarNames(variableName));
+            currentCode.appendCode(pycCode.indexOfNames(variableName));
         } else {
             System.out.println("no exist variable");
             return ;
@@ -333,7 +333,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
             } else if (pycCode.isContainNames(variableName)) {
                 currentCode.addNames(variableName);
                 currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
-                currentCode.appendCode(pycCode.indexOfVarNames(variableName));
+                currentCode.appendCode(pycCode.indexOfNames(variableName));
             } else {
                 System.out.println("no exist variable");
                 return ;
@@ -537,6 +537,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
             currentCode.appendCode(OpCode.STORE_FAST.getHexCode());
             currentCode.appendCode(currentCode.indexOfVarNames(exprName));
         } else if (pycCode.isContainNames(exprName)) {
+            currentCode.addNames(exprName);
             currentCode.appendCode(OpCode.STORE_GLOBAL.getHexCode());
             currentCode.appendCode(pycCode.indexOfNames(exprName));
         }
