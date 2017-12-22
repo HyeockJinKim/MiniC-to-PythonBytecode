@@ -428,6 +428,15 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
     @Override
     public void visitFun_call(FuncallNode node) {
         String functionName = node.t_node.toString();
+        if (functionName.equals("write")) {
+            ++assignDepth;
+            node.args.accept(this);
+            --assignDepth;
+            currentCode.appendCode(OpCode.PRINT_ITEM.getHexCode());
+            currentCode.appendCode(OpCode.PRINT_NEWLINE.getHexCode());
+        } else if (functionName.equals("read")) {
+
+        }
         currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
         currentCode.appendCode(pycCode.indexOfNames(functionName));
         currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
@@ -435,19 +444,14 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
         node.args.accept(this);
         --assignDepth;
 
-        if (functionName.equals("write")) {
-            currentCode.appendCode(OpCode.PRINT_ITEM.getHexCode());
-            currentCode.appendCode(OpCode.PRINT_NEWLINE.getHexCode());
-        } else if (functionName.equals("read")) {
 
-        } else {
-            currentCode.appendCode(OpCode.CALL_FUNCTION.getHexCode());
-            currentCode.appendCode(pycCode.indexOfNames(node.t_node.toString()));
-            currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
-            if (assignDepth == 0) {
-                currentCode.appendCode(OpCode.POP_TOP.getHexCode());
-            }
+        currentCode.appendCode(OpCode.CALL_FUNCTION.getHexCode());
+        currentCode.appendCode(pycCode.indexOfNames(node.t_node.toString()));
+        currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
+        if (assignDepth == 0) {
+            currentCode.appendCode(OpCode.POP_TOP.getHexCode());
         }
+
     }
 
     @Override
