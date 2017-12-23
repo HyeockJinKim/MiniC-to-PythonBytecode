@@ -195,6 +195,9 @@ public class MiniCAstVisitor extends MiniCBaseVisitor<MiniCNode> {
             Expression expr1 = (Expression) visit(ctx.left);
             Expression expr2 = (Expression) visit(ctx.right);
             if ("*/%+-".indexOf(ctx.op.getText()) >= 0) {
+                if (isToUnary(expr1, expr2, ctx.op.getText()))
+                    return new UnaryOpNode(ctx.op.getText(), expr2);
+
                 if (isOneLeft(expr1, expr2, ctx.op.getText())) return expr1;
                 else if (isOneLeft(expr2, expr1, ctx.op.getText())) return expr2;
                 else if (isToZero(expr1, expr2, ctx.op.getText()))
@@ -385,6 +388,9 @@ public class MiniCAstVisitor extends MiniCBaseVisitor<MiniCNode> {
             return true;
 
         return false;
+    }
+    private boolean isToUnary(Expression expr1, Expression expr2, String op) {
+        return op.equals("-") && expr1.toString().equals("0");
     }
 
     private int parseInteger(String literal) {
