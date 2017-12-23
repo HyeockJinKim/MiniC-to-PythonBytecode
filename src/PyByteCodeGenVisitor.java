@@ -360,19 +360,17 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
         if (currentCode.isContainVarNames(variableName)) {
             currentCode.appendCode(OpCode.LOAD_FAST.getHexCode());
             currentCode.appendCode(currentCode.indexOfVarNames(variableName));
-        } else if (pycCode.isContainNames(variableName)) {
+        } else {
             currentCode.addNames(variableName);
             currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
             currentCode.appendCode(currentCode.indexOfNames(variableName));
-        } else {
-            System.out.println("no exist variable");
-            return ;
         }
         currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
         ++assignDepth;
         node.lhs.accept(this);
         --assignDepth;
         currentCode.appendCode(OpCode.STORE_SUBSCR.getHexCode());
+
     }
 
     @Override
@@ -382,13 +380,10 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
             if (currentCode.isContainVarNames(variableName)) {
                 currentCode.appendCode(OpCode.LOAD_FAST.getHexCode());
                 currentCode.appendCode(currentCode.indexOfVarNames(variableName));
-            } else if (pycCode.isContainNames(variableName)) {
+            } else {
                 currentCode.addNames(variableName);
                 currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
                 currentCode.appendCode(currentCode.indexOfNames(variableName));
-            } else {
-                System.out.println("no exist variable");
-                return ;
             }
             currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
             node.expr.accept(this);
@@ -567,7 +562,24 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
                 if (assignDepth > 0) {
                     currentCode.appendCode(OpCode.DUP_TOP.getHexCode());
                 }
-                storeValue(exprName);
+                if (node.expr instanceof ArefNode) {
+                    String variableName = ((ArefNode)(node.expr)).t_node.toString();
+                    if (currentCode.isContainVarNames(variableName)) {
+                        currentCode.appendCode(OpCode.LOAD_FAST.getHexCode());
+                        currentCode.appendCode(currentCode.indexOfVarNames(variableName));
+                    } else {
+                        currentCode.addNames(variableName);
+                        currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
+                        currentCode.appendCode(currentCode.indexOfNames(variableName));
+                    }
+                    currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
+                    ++assignDepth;
+                    ((ArefNode)(node.expr)).expr.accept(this);
+                    --assignDepth;
+                    currentCode.appendCode(OpCode.STORE_SUBSCR.getHexCode());
+                } else {
+                    storeValue(exprName);
+                }
                 break;
             case "++":
                 currentCode.appendCode(OpCode.LOAD_CONST.getHexCode());
@@ -578,7 +590,24 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
                 if (assignDepth > 0) {
                     currentCode.appendCode(OpCode.DUP_TOP.getHexCode());
                 }
-                storeValue(exprName);
+                if (node.expr instanceof ArefNode) {
+                    String variableName = ((ArefNode)(node.expr)).t_node.toString();
+                    if (currentCode.isContainVarNames(variableName)) {
+                        currentCode.appendCode(OpCode.LOAD_FAST.getHexCode());
+                        currentCode.appendCode(currentCode.indexOfVarNames(variableName));
+                    } else {
+                        currentCode.addNames(variableName);
+                        currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
+                        currentCode.appendCode(currentCode.indexOfNames(variableName));
+                    }
+                    currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
+                    ++assignDepth;
+                    ((ArefNode)(node.expr)).expr.accept(this);
+                    --assignDepth;
+                    currentCode.appendCode(OpCode.STORE_SUBSCR.getHexCode());
+                } else {
+                    storeValue(exprName);
+                }
                 break;
             case "!":
                 currentCode.appendCode(OpCode.UNARY_NOT.getHexCode());
