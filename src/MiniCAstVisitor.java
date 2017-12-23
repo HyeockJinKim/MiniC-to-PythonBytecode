@@ -195,10 +195,13 @@ public class MiniCAstVisitor extends MiniCBaseVisitor<MiniCNode> {
             Expression expr1 = (Expression) visit(ctx.left);
             Expression expr2 = (Expression) visit(ctx.right);
             if ("*/%+-".indexOf(ctx.op.getText()) >= 0) {
+                if (isOneLeft(expr1, expr2, ctx.op.getText())) return expr1;
+                else if (isOneLeft(expr2, expr1, ctx.op.getText())) return expr2;
+                else if (isToZero(expr1, expr2, ctx.op.getText()))
+                    return new TerminalExpression(new TerminalNodeImpl(new CommonToken(33, "0")));
+
                 if (expr1 instanceof TerminalExpression && ((TerminalExpression) expr1).t_node.getSymbol().getType()==33
                         && expr2 instanceof TerminalExpression && ((TerminalExpression) expr2).t_node.getSymbol().getType()==33) {
-//                    int v1 = Integer.parseInt(expr1.toString());
-//                    int v2 = Integer.parseInt(expr2.toString());
                     int v1 = parseInteger(expr1.toString());
                     int v2 = parseInteger(expr2.toString());
                     int result = calculate(v1, v2, ctx.op.getText());
@@ -358,6 +361,30 @@ public class MiniCAstVisitor extends MiniCBaseVisitor<MiniCNode> {
     }
     private boolean isEmptyExprs(MiniCParser.ArgsContext ctx) {
         return ctx.getChildCount() == 0;
+    }
+
+
+    private boolean isOneLeft(Expression expr1, Expression expr2, String op) {
+        if (op.equals("*") && expr2.toString().equals("1"))
+            return true;
+        if (op.equals("/") && expr2.toString().equals("1"))
+            return true;
+        if (op.equals("+") && expr2.toString().equals("0"))
+            return true;
+        if (op.equals("-") && expr2.toString().equals("0"))
+            return true;
+
+        return false;
+    }
+    private boolean isToZero(Expression expr1, Expression expr2, String op) {
+        if (op.equals("*") && (expr1.toString().equals("0") || expr2.toString().equals("0")))
+            return true;
+        if (op.equals("/") && expr1.toString().equals("0"))
+            return true;
+        if (op.equals("%") && expr2.toString().equals("1"))
+            return true;
+
+        return false;
     }
 
     private int parseInteger(String literal) {
