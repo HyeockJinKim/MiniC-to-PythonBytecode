@@ -1,5 +1,6 @@
 # coding=utf-8
-import sys, dis, imp, marshal, json, new, time, types
+import sys, imp, marshal, json, new, time, types
+from opcode import *
 
 
 def convertjsontocode(obj):
@@ -29,7 +30,7 @@ def convertjsontocode(obj):
     code = new.code(jsonObj["argCount"],
                     jsonObj["nLocals"],
                     jsonObj["stackSize"],
-                    jsonObj["flags"],
+                    int(str(jsonObj["flags"]), 16),
                     jsonObj["code"].decode('hex'),
                     myConst,
                     names,
@@ -37,7 +38,7 @@ def convertjsontocode(obj):
                     str(jsonObj["fileName"]),
                     str(jsonObj["name"]),
                     jsonObj["firstLineNumber"],
-                    ""
+                    str(jsonObj["lNoTab"])
                     )
 
     return code
@@ -71,7 +72,6 @@ def isnumber(s):
 def savepyc(code, path):
     stamp = long(time.time())
     magicnum = imp.get_magic()  # python 버전별 매직 넘버
-    dumpCode = marshal.dumps(code)
     try:
         with open(path, 'wb') as f:
             f.write(magicnum)
@@ -79,6 +79,7 @@ def savepyc(code, path):
             f.write(chr((stamp >> 8) & 0xff))
             f.write(chr((stamp >> 16) & 0xff))
             f.write(chr((stamp >> 24) & 0xff))
+            dumpCode = marshal.dumps(code)
             f.write(dumpCode)
             f.flush()
     except OSError:
@@ -87,6 +88,7 @@ def savepyc(code, path):
         except OSError:
             pass
         raise
+
 
 def disassemCompiledFile(fileName):
     f = open(fileName, "rb")
@@ -97,6 +99,7 @@ def disassemCompiledFile(fileName):
     code = marshal.load(f)
     showCode(code)
 
+
 def showCode(code, indent=''):
     print "%scode" % indent
     indent += '   '
@@ -105,7 +108,7 @@ def showCode(code, indent=''):
     print "%sstacksize \t:%d" % (indent, code.co_stacksize)
     print "%sflags     \t:%04x" % (indent, code.co_flags)
     showHex("code", code.co_code, indent=indent)
-    dis.disassemble(code)
+    disassemble(code)
     print "%sconsts" % indent
     for const in code.co_consts:
         if type(const) == types.CodeType:
@@ -119,7 +122,37 @@ def showCode(code, indent=''):
     print "%sfilename %r" % (indent, code.co_filename)
     print "%sname %r" % (indent, code.co_name)
     print "%sfirstlineno %d" % (indent, code.co_firstlineno)
-    showHex("lnotab", code.co_lnotab, indent=indent)
+
+
+def disassemble(co):
+    code = co.co_code
+    n = len(code)
+    i = 0
+    free = None
+    while i < n:
+        c = code[i]
+        op = ord(c)
+        print '        ',
+        print repr(i).rjust(4),
+        print opname[op].ljust(20),
+        i = i + 1
+        if op >= HAVE_ARGUMENT:
+            oparg = ord(code[i]) + ord(code[i + 1]) * 256
+            i = i + 2
+            print repr(oparg).rjust(5),
+            if op in hasconst:
+                print '(' + repr(co.co_consts[oparg]) + ')',
+            elif op in hasname:
+                print '(' + co.co_names[oparg] + ')',
+            elif op in haslocal:
+                print '(' + co.co_varnames[oparg] + ')',
+            elif op in hascompare:
+                print '(' + cmp_op[oparg] + ')',
+            elif op in hasfree:
+                if free is None:
+                    free = co.co_cellvars + co.co_freevars
+                print '(' + free[oparg] + ')',
+        print
 
 
 def showHex(label, h, indent):
@@ -139,4 +172,5 @@ def main(argv, path):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1],"./test.pyc")
+    print "JSON : \n" + sys.argv[1]
+    main(sys.argv[1], "./test.pyc")
