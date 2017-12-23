@@ -14,6 +14,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
     private Code currentCode;
     private int assignDepth;
     private int lineNumber;
+    private int jumpNum;
     private boolean isReturn;
 
     @Override
@@ -23,6 +24,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
             return ;
         }
         lineNumber = 1;
+        jumpNum = 0;
         pycCode = new Code(64);
         currentCode = new Code(67);
 
@@ -59,7 +61,6 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
     public void visitVar_decl(Variable_Declaration node) {
         if (!pycCode.addNames(node.lhs.getText())) {
             System.out.println("This value is already exist : visitVar_decl");
-            return ;
         }
     }
 
@@ -143,6 +144,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
             currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
             currentCode.appendCode(OpCode.RETURN_VALUE.getHexCode());
         }
+        System.out.println(currentCode.getCode().toString());
         currentCode = new Code(67);
 
     }
@@ -186,7 +188,32 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
     @Override
     public void visitWhile_stmt(While_Statement node) {
         // TODO
-        
+
+
+        currentCode.appendCode(OpCode.SETUP_LOOP.getHexCode());
+        currentCode.appendCode("J"+jumpNum++);
+        currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
+        int savePos = currentCode.getCode().toString().length()/2;
+        node.expr.accept(this);
+        currentCode.appendCode(OpCode.POP_JUMP_IF_FALSE.getHexCode());
+        currentCode.appendCode("J"+jumpNum++);
+        currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
+
+        node.stmt.accept(this);
+
+        currentCode.appendCode(OpCode.JUMP_ABSOLUTE.getHexCode());
+        currentCode.appendCode(String.format("%02x", savePos));
+        currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
+
+        currentCode.appendCode(OpCode.POP_BLOCK.getHexCode());
+        --jumpNum;
+        currentCode.setCode(
+        currentCode.getCode().toString().replaceAll(("J"+jumpNum),
+                String.format("%02x", (currentCode.getCode().toString().length()/2-1))));
+        --jumpNum;
+        currentCode.setCode(
+        currentCode.getCode().toString().replaceAll(("J"+jumpNum),
+                String.format("%02x", (currentCode.getCode().toString().length()/2 - savePos))));
 
     }
 
@@ -263,7 +290,9 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
     @Override
     public void visitReturn_stmt(Return_Statement node) {
         if (node.expr != null) {
+            ++assignDepth;
             node.expr.accept(this);
+            --assignDepth;
         } else {
             currentCode.appendCode(OpCode.LOAD_CONST.getHexCode());
             currentCode.appendCode(currentCode.indexOfConst("None"));
@@ -482,6 +511,8 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
                 currentCode.appendCode(OpCode.LOAD_CONST.getHexCode());
                 currentCode.addConst(1);
                 currentCode.appendCode(currentCode.indexOfConst(1));
+                currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
+
                 currentCode.appendCode(OpCode.BINARY_SUBTRACT.getHexCode());
                 if (assignDepth > 0) {
                     currentCode.appendCode(OpCode.DUP_TOP.getHexCode());
@@ -492,6 +523,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
                 currentCode.appendCode(OpCode.LOAD_CONST.getHexCode());
                 currentCode.addConst(1);
                 currentCode.appendCode(currentCode.indexOfConst(1));
+                currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
                 currentCode.appendCode(OpCode.BINARY_ADD.getHexCode());
                 if (assignDepth > 0) {
                     currentCode.appendCode(OpCode.DUP_TOP.getHexCode());
