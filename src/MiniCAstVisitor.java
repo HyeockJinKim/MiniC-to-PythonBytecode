@@ -8,6 +8,8 @@ import Domain.Param.Parameters;
 import Domain.Program;
 import Domain.Stmt.*;
 import Domain.Type_spec.TypeSpecification;
+import org.antlr.v4.runtime.CommonToken;
+import org.antlr.v4.runtime.tree.TerminalNodeImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -190,7 +192,26 @@ public class MiniCAstVisitor extends MiniCBaseVisitor<MiniCNode> {
             return new UnaryOpNode(ctx.op.getText(), (Expression) visit(ctx.expr(0)));
         }
         else if (isBinaryOperation(ctx)) {
-            return new BinaryOpNode((Expression) visit(ctx.left),ctx.op.getText(),(Expression) visit(ctx.right));
+            Expression expr1 = (Expression) visit(ctx.left);
+            Expression expr2 = (Expression) visit(ctx.right);
+            if ("*/%+-".indexOf(ctx.op.getText()) >= 0) {
+                if (isToUnary(expr1, expr2, ctx.op.getText()))
+                    return new UnaryOpNode(ctx.op.getText(), expr2);
+
+                if (isOneLeft(expr1, expr2, ctx.op.getText())) return expr1;
+                else if (isOneLeft(expr2, expr1, ctx.op.getText())) return expr2;
+                else if (isToZero(expr1, expr2, ctx.op.getText()))
+                    return new TerminalExpression(new TerminalNodeImpl(new CommonToken(33, "0")));
+
+                if (expr1 instanceof TerminalExpression && ((TerminalExpression) expr1).t_node.getSymbol().getType()==33
+                        && expr2 instanceof TerminalExpression && ((TerminalExpression) expr2).t_node.getSymbol().getType()==33) {
+                    int v1 = parseInteger(expr1.toString());
+                    int v2 = parseInteger(expr2.toString());
+                    int result = calculate(v1, v2, ctx.op.getText());
+                    return new TerminalExpression(new TerminalNodeImpl(new CommonToken(33, ""+result)));
+                }
+            }
+            return new BinaryOpNode(expr1, ctx.op.getText(), expr2);
         }
         else if (isIdentAssign(ctx)) {
             return new AssignNode(ctx.IDENT(), (Expression) visit(ctx.expr(0)));
@@ -345,4 +366,53 @@ public class MiniCAstVisitor extends MiniCBaseVisitor<MiniCNode> {
         return ctx.getChildCount() == 0;
     }
 
+
+    private boolean isOneLeft(Expression expr1, Expression expr2, String op) {
+        if (op.equals("*") && expr2.toString().equals("1"))
+            return true;
+        if (op.equals("/") && expr2.toString().equals("1"))
+            return true;
+        if (op.equals("+") && expr2.toString().equals("0"))
+            return true;
+        if (op.equals("-") && expr2.toString().equals("0"))
+            return true;
+
+        return false;
+    }
+    private boolean isToZero(Expression expr1, Expression expr2, String op) {
+        if (op.equals("*") && (expr1.toString().equals("0") || expr2.toString().equals("0")))
+            return true;
+        if (op.equals("/") && expr1.toString().equals("0"))
+            return true;
+        if (op.equals("%") && expr2.toString().equals("1"))
+            return true;
+
+        return false;
+    }
+    private boolean isToUnary(Expression expr1, Expression expr2, String op) {
+        return op.equals("-") && expr1.toString().equals("0");
+    }
+
+    private int parseInteger(String literal) {
+        if (literal.startsWith("0x") || literal.startsWith("0X"))
+            return Integer.parseInt(literal.substring(2), 16);
+        else if (literal.startsWith("0"))
+            return Integer.parseInt(literal, 8);
+        else
+            return Integer.parseInt(literal, 10);
+    }
+    private int calculate(int v1, int v2, String op) {
+        switch (op) {
+            case "*":
+                return v1*v2;
+            case "/":
+                return v1/v2;
+            case "%":
+                return v1%v2;
+            case "+":
+                return v1+v2;
+            default:  // -
+                return v1-v2;
+        }
+    }
 }
