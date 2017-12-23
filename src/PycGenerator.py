@@ -9,7 +9,7 @@ def convertjsontocode(obj):
         jsonObj = obj
 
     myConst = []
-    for cons in jsonObj["myConst"]:
+    for cons in jsonObj['myConst']:
         if type(cons) is dict:
             myConst.append(convertjsontocode(cons))
         else:
@@ -17,27 +17,27 @@ def convertjsontocode(obj):
     myConst = tuple(myConst)
 
     names = []
-    for name in jsonObj["names"]:
+    for name in jsonObj['names']:
         names.append(str(name))
     names = tuple(names)
 
     varNames = []
-    for varname in jsonObj["varNames"]:
+    for varname in jsonObj['varNames']:
         varNames.append(str(varname))
     varNames = tuple(varNames)
 
-    code = new.code(jsonObj["argCount"],
-                    jsonObj["nLocals"],
-                    jsonObj["stackSize"],
-                    jsonObj["flags"],
-                    jsonObj["code"].decode('hex'),
+    code = new.code(jsonObj['argCount'],
+                    jsonObj['nLocals'],
+                    jsonObj['stackSize'],
+                    jsonObj['flags'],
+                    jsonObj['code'].decode('hex'),
                     myConst,
                     names,
                     varNames,
-                    str(jsonObj["fileName"]),
-                    str(jsonObj["name"]),
-                    jsonObj["firstLineNumber"],
-                    ""
+                    str(jsonObj['fileName']),
+                    str(jsonObj['name']),
+                    jsonObj['firstLineNumber'],
+                    str(jsonObj['lNoTab'])
                     )
 
     return code
@@ -139,4 +139,6 @@ def main(argv, path):
 
 
 if __name__ == "__main__":
+    # print sys.argv[1]
     main(sys.argv[1],"./test.pyc")
+
