@@ -10,12 +10,69 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class ByteCodeToPycGenerator {
+    private static String OS = System.getProperty("os.name").toLowerCase();
+
     public void compile(Code code) {
-        JsonObject jsonCode = convertJsonObject(code);
-        sendToPythonCode(jsonCode);
+        if (isWindows()) {
+            JsonObject jsonCode = convertJsonObjectOfWin(code);
+            sendToPythonCode(jsonCode);
+        } else if (isUnix()) {
+            JsonObject jsonCode = convertJsonObject(code);
+            sendToPythonCode(jsonCode);
+        } else {
+            System.out.println("Your OS is not support!!");
+        }
+    }
+
+    public static boolean isWindows() {
+        return (OS.indexOf("win") >= 0);
+    }
+
+    public static boolean isUnix() {
+        return (OS.indexOf("nix") >= 0 || OS.indexOf("nux") >= 0 || OS.indexOf("aix") > 0);
     }
 
     private JsonObject convertJsonObject(Code code) {
+        JsonObjectBuilder jsonObjectBuilder = Json.createObjectBuilder();
+        JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
+
+        jsonObjectBuilder.add("argCount", code.getArgCount());
+        jsonObjectBuilder.add("nLocals", code.getNLocals());
+        jsonObjectBuilder.add("stackSize", code.getStackSize());
+        jsonObjectBuilder.add("flags", code.getFlags());
+        jsonObjectBuilder.add("code", code.getCode().toString());
+
+        ArrayList constArray = code.getMyConst();
+        for (Object cons : constArray) {
+            if (cons instanceof Code)
+                jsonArrayBuilder.add(convertJsonObject((Code) cons));
+            else if (cons instanceof String)
+                jsonArrayBuilder.add((String) cons);
+            else
+                jsonArrayBuilder.add((int) cons);
+        }
+        jsonObjectBuilder.add("myConst", jsonArrayBuilder.build());
+
+        jsonArrayBuilder = Json.createArrayBuilder();
+        ArrayList nameArray = code.getNames();
+        for (Object name : nameArray)
+            jsonArrayBuilder.add((String) name);
+        jsonObjectBuilder.add("names", jsonArrayBuilder.build());
+
+        jsonArrayBuilder = Json.createArrayBuilder();
+        ArrayList varNameArray = code.getVarNames();
+        for (Object name : varNameArray)
+            jsonArrayBuilder.add((String) name);
+        jsonObjectBuilder.add("varNames", jsonArrayBuilder.build());
+
+        jsonObjectBuilder.add("fileName", code.getFileName());
+        jsonObjectBuilder.add("name", code.getName());
+        jsonObjectBuilder.add("firstLineNumber", code.getFirstLineNumber());
+        jsonObjectBuilder.add("lNoTab", code.getlNoTab());
+        return jsonObjectBuilder.build();
+    }
+
+    private JsonObject convertJsonObjectOfWin(Code code) {
         JsonObjectBuilder jsonObjectBuilder = Json.createObjectBuilder();
         JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
 
@@ -23,14 +80,14 @@ public class ByteCodeToPycGenerator {
         jsonObjectBuilder.add("\"nLocals\"", code.getNLocals());
         jsonObjectBuilder.add("\"stackSize\"", code.getStackSize());
         jsonObjectBuilder.add("\"flags\"", code.getFlags());
-        jsonObjectBuilder.add("\"code\"", '\"'+code.getCode().toString()+'\"');
+        jsonObjectBuilder.add("\"code\"", '\"' + code.getCode().toString() + '\"');
 
         ArrayList constArray = code.getMyConst();
         for (Object cons : constArray) {
             if (cons instanceof Code)
                 jsonArrayBuilder.add(convertJsonObject((Code) cons));
             else if (cons instanceof String)
-                jsonArrayBuilder.add('\"'+(String) cons+'\"');
+                jsonArrayBuilder.add('\"' + (String) cons + '\"');
             else
                 jsonArrayBuilder.add((int) cons);
         }
@@ -39,19 +96,19 @@ public class ByteCodeToPycGenerator {
         jsonArrayBuilder = Json.createArrayBuilder();
         ArrayList nameArray = code.getNames();
         for (Object name : nameArray)
-            jsonArrayBuilder.add('\"'+(String) name+'\"');
+            jsonArrayBuilder.add('\"' + (String) name + '\"');
         jsonObjectBuilder.add("\"names\"", jsonArrayBuilder.build());
 
         jsonArrayBuilder = Json.createArrayBuilder();
         ArrayList varNameArray = code.getVarNames();
         for (Object name : varNameArray)
-            jsonArrayBuilder.add('\"'+(String) name+'\"');
+            jsonArrayBuilder.add('\"' + (String) name + '\"');
         jsonObjectBuilder.add("\"varNames\"", jsonArrayBuilder.build());
 
-        jsonObjectBuilder.add("\"fileName\"", '\"'+code.getFileName()+'\"');
-        jsonObjectBuilder.add("\"name\"", '\"'+code.getName()+'\"');
+        jsonObjectBuilder.add("\"fileName\"", '\"' + code.getFileName() + '\"');
+        jsonObjectBuilder.add("\"name\"", '\"' + code.getName() + '\"');
         jsonObjectBuilder.add("\"firstLineNumber\"", code.getFirstLineNumber());
-        jsonObjectBuilder.add("\"lNoTab\"", '\"'+code.getlNoTab()+'\"');
+        jsonObjectBuilder.add("\"lNoTab\"", '\"' + code.getlNoTab() + '\"');
         return jsonObjectBuilder.build();
     }
 
@@ -86,5 +143,3 @@ public class ByteCodeToPycGenerator {
         }
     }
 }
-
-// V5eXJleWR0Q0RycVkzc3NxM3NuYlFoSVNFaA==N0tHdzZyV1FJT3VwamV5eXJleWR0T3Vwam
