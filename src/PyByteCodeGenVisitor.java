@@ -192,7 +192,10 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
         currentCode.appendCode("J"+jumpNum++);
         currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
         int savePos = currentCode.getCode().toString().length()/2;
+
+        ++assignDepth;
         node.expr.accept(this);
+        --assignDepth;
         currentCode.appendCode(OpCode.POP_JUMP_IF_FALSE.getHexCode());
         currentCode.appendCode("J"+jumpNum++);
         currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
@@ -281,7 +284,9 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
     public void visitIf_stmt(If_Statement node) {
         // TODO
 
+        ++assignDepth;
         node.expr.accept(this);
+        --assignDepth;
         currentCode.appendCode(OpCode.POP_JUMP_IF_FALSE.getHexCode());
         currentCode.appendCode("J"+jumpNum++);
         currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
@@ -406,7 +411,25 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
     @Override
     public void visitBinary_op(BinaryOpNode node) {
         node.lhs.accept(this);
+        if (node.op.equals("and")) {
+                currentCode.appendCode(OpCode.JUMP_IF_FALSE_OR_POP.getHexCode());
+                // 점프할 위치
+                // TODO
+                currentCode.appendCode("J"+jumpNum);
+                currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
+
+        } else if (node.op.equals("or")) {
+            currentCode.appendCode(OpCode.JUMP_IF_TRUE_OR_POP.getHexCode());
+            // 점프할 위치
+            currentCode.appendCode("J"+ ++jumpNum);
+            currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
+        }
         node.rhs.accept(this);
+        if (node.op.equals("or")) {
+            currentCode.setCode(
+                    currentCode.getCode().toString().replaceAll(("J"+jumpNum--),
+                            String.format("%02x", (currentCode.getCode().toString().length()/2+3))));
+        }
 
         switch (node.op) {
             case "*":
@@ -452,18 +475,6 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
             case ">=":
                 currentCode.appendCode(OpCode.COMPARE_OP.getHexCode());
                 currentCode.appendCode(String.format("%02x", 5));
-                currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
-                break;
-            case "and":
-                currentCode.appendCode(OpCode.JUMP_IF_FALSE_OR_POP.getHexCode());
-                // 점프할 위치
-                // TODO
-                currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
-                break;
-            case "or":
-                currentCode.appendCode(OpCode.JUMP_IF_TRUE_OR_POP.getHexCode());
-                // 점프할 위치
-
                 currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
                 break;
             default:
