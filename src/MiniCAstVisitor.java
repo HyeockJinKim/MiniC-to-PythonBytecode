@@ -8,6 +8,8 @@ import Domain.Param.Parameters;
 import Domain.Program;
 import Domain.Stmt.*;
 import Domain.Type_spec.TypeSpecification;
+import org.antlr.v4.runtime.CommonToken;
+import org.antlr.v4.runtime.tree.TerminalNodeImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -190,7 +192,47 @@ public class MiniCAstVisitor extends MiniCBaseVisitor<MiniCNode> {
             return new UnaryOpNode(ctx.op.getText(), (Expression) visit(ctx.expr(0)));
         }
         else if (isBinaryOperation(ctx)) {
-            return new BinaryOpNode((Expression) visit(ctx.left),ctx.op.getText(),(Expression) visit(ctx.right));
+            Expression expr1 = (Expression) visit(ctx.left);
+            Expression expr2 = (Expression) visit(ctx.right);
+            if ("*/%+-".indexOf(ctx.op.getText()) >= 0) {
+                if (expr1 instanceof TerminalExpression && ((TerminalExpression) expr1).t_node.getSymbol().getType()==33
+                        && expr2 instanceof TerminalExpression && ((TerminalExpression) expr2).t_node.getSymbol().getType()==33) {
+//                    int v1 = Integer.parseInt(expr1.toString());
+//                    int v2 = Integer.parseInt(expr2.toString());
+                    int v1, v2;
+                    if (expr1.toString().startsWith("0x") || expr1.toString().startsWith("0X"))
+                        v1 = Integer.parseInt(expr1.toString().substring(2), 16);
+                    else if (expr1.toString().startsWith("0"))
+                        v1 = Integer.parseInt(expr1.toString(), 8);
+                    else
+                        v1 = Integer.parseInt(expr1.toString(), 10);
+                    if (expr2.toString().startsWith("0x") || expr2.toString().startsWith("0X"))
+                        v2 = Integer.parseInt(expr2.toString().substring(2), 16);
+                    else if (expr2.toString().startsWith("0"))
+                        v2 = Integer.parseInt(expr2.toString(), 8);
+                    else
+                        v2 = Integer.parseInt(expr2.toString(), 10);
+                    int result;
+                    switch (ctx.op.getText()) {
+                        case "*":
+                            result = v1*v2;
+                            return new TerminalExpression(new TerminalNodeImpl(new CommonToken(33, ""+result)));
+                        case "/":
+                            result = v1/v2;
+                            return new TerminalExpression(new TerminalNodeImpl(new CommonToken(33, ""+result)));
+                        case "%":
+                            result = v1%v2;
+                            return new TerminalExpression(new TerminalNodeImpl(new CommonToken(33, ""+result)));
+                        case "+":
+                            result = v1+v2;
+                            return new TerminalExpression(new TerminalNodeImpl(new CommonToken(33, ""+result)));
+                        case "-":
+                            result = v1-v2;
+                            return new TerminalExpression(new TerminalNodeImpl(new CommonToken(33, ""+result)));
+                    }
+                }
+            }
+            return new BinaryOpNode(expr1, ctx.op.getText(), expr2);
         }
         else if (isIdentAssign(ctx)) {
             return new AssignNode(ctx.IDENT(), (Expression) visit(ctx.expr(0)));
