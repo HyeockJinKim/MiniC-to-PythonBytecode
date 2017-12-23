@@ -199,37 +199,10 @@ public class MiniCAstVisitor extends MiniCBaseVisitor<MiniCNode> {
                         && expr2 instanceof TerminalExpression && ((TerminalExpression) expr2).t_node.getSymbol().getType()==33) {
 //                    int v1 = Integer.parseInt(expr1.toString());
 //                    int v2 = Integer.parseInt(expr2.toString());
-                    int v1, v2;
-                    if (expr1.toString().startsWith("0x") || expr1.toString().startsWith("0X"))
-                        v1 = Integer.parseInt(expr1.toString().substring(2), 16);
-                    else if (expr1.toString().startsWith("0"))
-                        v1 = Integer.parseInt(expr1.toString(), 8);
-                    else
-                        v1 = Integer.parseInt(expr1.toString(), 10);
-                    if (expr2.toString().startsWith("0x") || expr2.toString().startsWith("0X"))
-                        v2 = Integer.parseInt(expr2.toString().substring(2), 16);
-                    else if (expr2.toString().startsWith("0"))
-                        v2 = Integer.parseInt(expr2.toString(), 8);
-                    else
-                        v2 = Integer.parseInt(expr2.toString(), 10);
-                    int result;
-                    switch (ctx.op.getText()) {
-                        case "*":
-                            result = v1*v2;
-                            return new TerminalExpression(new TerminalNodeImpl(new CommonToken(33, ""+result)));
-                        case "/":
-                            result = v1/v2;
-                            return new TerminalExpression(new TerminalNodeImpl(new CommonToken(33, ""+result)));
-                        case "%":
-                            result = v1%v2;
-                            return new TerminalExpression(new TerminalNodeImpl(new CommonToken(33, ""+result)));
-                        case "+":
-                            result = v1+v2;
-                            return new TerminalExpression(new TerminalNodeImpl(new CommonToken(33, ""+result)));
-                        case "-":
-                            result = v1-v2;
-                            return new TerminalExpression(new TerminalNodeImpl(new CommonToken(33, ""+result)));
-                    }
+                    int v1 = parseInteger(expr1.toString());
+                    int v2 = parseInteger(expr2.toString());
+                    int result = calculate(v1, v2, ctx.op.getText());
+                    return new TerminalExpression(new TerminalNodeImpl(new CommonToken(33, ""+result)));
                 }
             }
             return new BinaryOpNode(expr1, ctx.op.getText(), expr2);
@@ -387,4 +360,26 @@ public class MiniCAstVisitor extends MiniCBaseVisitor<MiniCNode> {
         return ctx.getChildCount() == 0;
     }
 
+    private int parseInteger(String literal) {
+        if (literal.startsWith("0x") || literal.startsWith("0X"))
+            return Integer.parseInt(literal.substring(2), 16);
+        else if (literal.startsWith("0"))
+            return Integer.parseInt(literal, 8);
+        else
+            return Integer.parseInt(literal, 10);
+    }
+    private int calculate(int v1, int v2, String op) {
+        switch (op) {
+            case "*":
+                return v1*v2;
+            case "/":
+                return v1/v2;
+            case "%":
+                return v1%v2;
+            case "+":
+                return v1+v2;
+            default:  // -
+                return v1-v2;
+        }
+    }
 }
