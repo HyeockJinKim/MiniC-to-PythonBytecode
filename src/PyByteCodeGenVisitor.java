@@ -370,7 +370,6 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
         node.lhs.accept(this);
         --assignDepth;
         currentCode.appendCode(OpCode.STORE_SUBSCR.getHexCode());
-
     }
 
     @Override
@@ -522,19 +521,17 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
     @Override
     public void visitTerminal(TerminalExpression node) {
         String variableName = node.toString();
-        if (currentCode.isContainVarNames(variableName)) {
-            currentCode.appendCode(OpCode.LOAD_FAST.getHexCode());
-            currentCode.appendCode(currentCode.indexOfVarNames(variableName));
-        } else if (pycCode.isContainNames(variableName)) {
-            currentCode.addNames(variableName);
-            currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
-            currentCode.appendCode(currentCode.indexOfNames(variableName));
-        } else if ('0' <= variableName.charAt(0)  && variableName.charAt(0) <= '9') {
+        if ('0' <= variableName.charAt(0)  && variableName.charAt(0) <= '9') {
             currentCode.addConst(literalNumber(variableName));
             currentCode.appendCode(OpCode.LOAD_CONST.getHexCode());
             currentCode.appendCode(currentCode.indexOfConst(literalNumber(variableName)));
+        } else if (currentCode.isContainVarNames(variableName)) {
+            currentCode.appendCode(OpCode.LOAD_FAST.getHexCode());
+            currentCode.appendCode(currentCode.indexOfVarNames(variableName));
         } else {
-            return;
+            currentCode.addNames(variableName);
+            currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
+            currentCode.appendCode(currentCode.indexOfNames(variableName));
         }
         currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
     }
@@ -630,7 +627,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
         if (currentCode.isContainVarNames(exprName)) {
             currentCode.appendCode(OpCode.STORE_FAST.getHexCode());
             currentCode.appendCode(currentCode.indexOfVarNames(exprName));
-        } else if (pycCode.isContainNames(exprName)) {
+        } else {
             currentCode.addNames(exprName);
             currentCode.appendCode(OpCode.STORE_GLOBAL.getHexCode());
             currentCode.appendCode(currentCode.indexOfNames(exprName));
