@@ -72,6 +72,7 @@ def isnumber(s):
 def savepyc(code, path):
     stamp = long(time.time())
     magicnum = imp.get_magic()  # python 버전별 매직 넘버
+    dumpCode = marshal.dumps(code)
     try:
         with open(path, 'wb') as f:
             f.write(magicnum)
@@ -79,7 +80,6 @@ def savepyc(code, path):
             f.write(chr((stamp >> 8) & 0xff))
             f.write(chr((stamp >> 16) & 0xff))
             f.write(chr((stamp >> 24) & 0xff))
-            dumpCode = marshal.dumps(code)
             f.write(dumpCode)
             f.flush()
     except OSError:
