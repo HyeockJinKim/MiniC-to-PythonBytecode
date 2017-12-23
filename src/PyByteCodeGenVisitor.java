@@ -547,8 +547,9 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
     @Override
     public void visitUnary_op(UnaryOpNode node) {
         String exprName = node.expr.toString();
-
+        ++assignDepth;
         node.expr.accept(this);
+        --assignDepth;
         switch (node.op) {
             case "-":
                 currentCode.appendCode(OpCode.UNARY_NEGATIVE.getHexCode());
