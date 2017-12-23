@@ -32,7 +32,7 @@ public class Code {
 
     public Code(int flags) {
         argCount = 0;
-        stackSize = 10;
+        stackSize = 5;
         this.flags = flags;
         code = new StringBuilder();
         myConst = new ArrayList<>();

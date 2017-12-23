@@ -46,7 +46,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
         pycCode.appendCode(pycCode.indexOfConst("None"));
         pycCode.appendCode(OpCode.STOP_CODE.getHexCode());
         pycCode.appendCode(OpCode.RETURN_VALUE.getHexCode());
-        System.out.println(pycCode.getCode().toString());
+
         new ByteCodeToPycGenerator().compile(pycCode);
 
 
@@ -70,27 +70,16 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
             System.out.println("This value is already exist : visitVar_decl_array");
             return ;
         }
-        int literal = literalNumber(node.rhs.getText());
-        if (literal <= 0) {
+        if (literalNumber(node.rhs.getText()) <= 0) {
             System.out.println("This array number is le than 0 : visitVar_decl_array");
             return ;
         }
-        if (pycCode.getStackSize() < literal) {
-            pycCode.setStackSize(literal);
-        }
 
-        pycCode.addConst(0);
-        for (int i = 0; i < literal; ++i) {
-            pycCode.appendCode(OpCode.LOAD_CONST.getHexCode());
-            pycCode.appendCode(pycCode.indexOfConst(0));
-            pycCode.appendCode(OpCode.STOP_CODE.getHexCode());
-        }
-
-        pycCode.appendCode(OpCode.BUILD_LIST.getHexCode());
-        pycCode.appendCode(String.format("%02x", literal));
+        pycCode.appendCode(OpCode.BUILD_MAP.getHexCode());
+        pycCode.appendCode(String.format("%02x", 0));
         pycCode.appendCode(OpCode.STOP_CODE.getHexCode());
 
-        pycCode.appendCode(OpCode.STORE_NAME.getHexCode());
+        pycCode.appendCode(OpCode.STORE_GLOBAL.getHexCode());
         pycCode.appendCode(pycCode.indexOfNames(variableName));
         pycCode.appendCode(OpCode.STOP_CODE.getHexCode());
 
@@ -110,7 +99,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
         pycCode.appendCode(pycCode.indexOfConst(literal));
         pycCode.appendCode(OpCode.STOP_CODE.getHexCode());
 
-        pycCode.appendCode(OpCode.STORE_NAME.getHexCode());
+        pycCode.appendCode(OpCode.STORE_GLOBAL.getHexCode());
         pycCode.appendCode(pycCode.indexOfNames(variableName));
         pycCode.appendCode(OpCode.STOP_CODE.getHexCode());
 
@@ -154,8 +143,6 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
             currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
             currentCode.appendCode(OpCode.RETURN_VALUE.getHexCode());
         }
-        for (String a : currentCode.getNames())
-            System.out.println(a);
         currentCode = new Code(67);
 
     }
@@ -199,6 +186,8 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
     @Override
     public void visitWhile_stmt(While_Statement node) {
         // TODO
+        
+
     }
 
     @Override
@@ -230,24 +219,13 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
             System.out.println("This value is already exist! : visitLocal_decl");
             return ;
         }
-        int literal = literalNumber(node.rhs.getText());
-        if (literal <= 0) {
+        if (literalNumber(node.rhs.getText()) <= 0) {
             System.out.println("This array number is le than 0 : visitLocal_decl");
             return ;
         }
-        if (currentCode.getStackSize() < literal) {
-            currentCode.setStackSize(literal);
-        }
 
-        currentCode.addConst(0);
-        for (int i = 0; i < literal; ++i) {
-            currentCode.appendCode(OpCode.LOAD_CONST.getHexCode());
-            currentCode.appendCode(currentCode.indexOfConst(0));
-            currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
-        }
-
-        currentCode.appendCode(OpCode.BUILD_LIST.getHexCode());
-        currentCode.appendCode(String.format("%02x", literal));
+        currentCode.appendCode(OpCode.BUILD_MAP.getHexCode());
+        currentCode.appendCode(String.format("%02x", 0));
         currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
 
         currentCode.appendCode(OpCode.STORE_FAST.getHexCode());
@@ -313,13 +291,15 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
         } else if (pycCode.isContainNames(variableName)) {
             currentCode.addNames(variableName);
             currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
-            currentCode.appendCode(pycCode.indexOfNames(variableName));
+            currentCode.appendCode(currentCode.indexOfNames(variableName));
         } else {
             System.out.println("no exist variable");
             return ;
         }
         currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
+        ++assignDepth;
         node.lhs.accept(this);
+        --assignDepth;
         currentCode.appendCode(OpCode.STORE_SUBSCR.getHexCode());
     }
 
@@ -333,7 +313,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
             } else if (pycCode.isContainNames(variableName)) {
                 currentCode.addNames(variableName);
                 currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
-                currentCode.appendCode(pycCode.indexOfNames(variableName));
+                currentCode.appendCode(currentCode.indexOfNames(variableName));
             } else {
                 System.out.println("no exist variable");
                 return ;
@@ -437,19 +417,23 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
             return ;
         } else if (functionName.equals("read")) {
 
+            return ;
         }
-        System.out.println(functionName);
         currentCode.addNames(functionName);
         currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
-        currentCode.appendCode(pycCode.indexOfNames(functionName));
+        currentCode.appendCode(currentCode.indexOfNames(functionName));
         currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
         ++assignDepth;
         node.args.accept(this);
         --assignDepth;
 
-
         currentCode.appendCode(OpCode.CALL_FUNCTION.getHexCode());
-        currentCode.appendCode(pycCode.indexOfNames(functionName));
+        if (node.args.exprs == null) {
+            currentCode.appendCode(String.format("%02x", 0));
+        } else {
+            currentCode.appendCode(String.format("%02x", node.args.exprs.size()));
+        }
+
         currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
         if (assignDepth == 0) {
             currentCode.appendCode(OpCode.POP_TOP.getHexCode());
@@ -471,11 +455,11 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
         } else if (pycCode.isContainNames(variableName)) {
             currentCode.addNames(variableName);
             currentCode.appendCode(OpCode.LOAD_GLOBAL.getHexCode());
-            currentCode.appendCode(pycCode.indexOfNames(variableName));
+            currentCode.appendCode(currentCode.indexOfNames(variableName));
         } else if ('0' <= variableName.charAt(0)  && variableName.charAt(0) <= '9') {
-            currentCode.addConst(variableName);
+            currentCode.addConst(literalNumber(variableName));
             currentCode.appendCode(OpCode.LOAD_CONST.getHexCode());
-            currentCode.appendCode(currentCode.indexOfConst(variableName));
+            currentCode.appendCode(currentCode.indexOfConst(literalNumber(variableName)));
         } else {
             return;
         }
@@ -539,7 +523,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
         } else if (pycCode.isContainNames(exprName)) {
             currentCode.addNames(exprName);
             currentCode.appendCode(OpCode.STORE_GLOBAL.getHexCode());
-            currentCode.appendCode(pycCode.indexOfNames(exprName));
+            currentCode.appendCode(currentCode.indexOfNames(exprName));
         }
         currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
     }
