@@ -45,7 +45,6 @@ public class Code {
         lNoTab = "";
     }
 
-
     public boolean isContainConst(Object thisConst) {
         return myConst.contains(thisConst);
     }
@@ -88,6 +87,10 @@ public class Code {
 
     public StringBuilder getCode() {
         return code;
+    }
+
+    public void setCode(String code) {
+        this.code = new StringBuilder(code);
     }
 
     public void appendCode(String code) {

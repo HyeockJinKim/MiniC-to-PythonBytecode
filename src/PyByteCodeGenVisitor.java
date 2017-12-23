@@ -187,9 +187,7 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
 
     @Override
     public void visitWhile_stmt(While_Statement node) {
-        // TODO
-
-
+        // TODO Disassemble이 안돼;;
         currentCode.appendCode(OpCode.SETUP_LOOP.getHexCode());
         currentCode.appendCode("J"+jumpNum++);
         currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
