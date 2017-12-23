@@ -279,8 +279,48 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
 
     @Override
     public void visitIf_stmt(If_Statement node) {
-        node.expr.accept(this);
         // TODO
+
+        node.expr.accept(this);
+        currentCode.appendCode(OpCode.POP_JUMP_IF_FALSE.getHexCode());
+        currentCode.appendCode("J"+jumpNum++);
+        currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
+
+        node.if_stmt.accept(this);
+
+        boolean isIfReturn = isReturn;
+        isReturn = false;
+
+
+        if (node.else_stmt != null) {
+            currentCode.appendCode(OpCode.JUMP_FORWARD.getHexCode());
+            currentCode.appendCode("J"+jumpNum++);
+            currentCode.appendCode(OpCode.STOP_CODE.getHexCode());
+
+            int save2 = (currentCode.getCode().toString().length()/2);
+
+            int savePos = currentCode.getCode().toString().length()/2;
+            node.else_stmt.accept(this);
+            --jumpNum;
+            currentCode.setCode(
+                    currentCode.getCode().toString().replaceAll(("J"+(jumpNum)),
+                            String.format("%02x", (currentCode.getCode().toString().length()/2-savePos))));
+
+            --jumpNum;
+            currentCode.setCode(
+                    currentCode.getCode().toString().replaceAll("J"+(jumpNum),
+                            String.format("%02x", save2)));
+            if (isReturn && isIfReturn) {
+                isReturn = true;
+            } else {
+                isReturn = false;
+            }
+        } else {
+            --jumpNum;
+            currentCode.setCode(
+                    currentCode.getCode().toString().replaceAll(("J"+jumpNum),
+                            String.format("%02x", (currentCode.getCode().toString().length()/2))));
+        }
 
 
     }
@@ -545,7 +585,6 @@ public class PyByteCodeGenVisitor implements ASTVisitor {
             expression.accept(this);
         }
     }
-    // FIXME : GLOBAL 변수 문제
     private void storeValue(String exprName) {
         if (currentCode.isContainVarNames(exprName)) {
             currentCode.appendCode(OpCode.STORE_FAST.getHexCode());
